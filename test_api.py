@@ -2,12 +2,17 @@ import streamlit as st
 import requests
 import pandas as pd
 import json
+import numpy as np
 
 st.title('API de Scoring de Crédit')
 
 uploaded_file = st.file_uploader("Choisir un fichier CSV pour prédiction", type="csv")
 if uploaded_file is not None:
     data = pd.read_csv(uploaded_file)
+    
+    # Remplacer les valeurs infinies et NaN
+    data.replace([np.inf, -np.inf], np.nan, inplace=True)
+    data.fillna(0, inplace=True)
     
     # Optimisation des types de données
     for col in data.select_dtypes(include=['float64']).columns:
