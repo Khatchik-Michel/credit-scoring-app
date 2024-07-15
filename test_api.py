@@ -17,7 +17,7 @@ if uploaded_file is not None:
     # Optimisation des types de données
     for col in data.select_dtypes(include=['float64']).columns:
         data[col] = data[col].astype('float32')
-    for col in data.select_dtypes(include=['int64']).columns:
+    for col in data.select_dtypes(include(['int64']).columns):
         data[col] = data[col].astype('int32')
 
     st.write(data)
@@ -32,9 +32,9 @@ if uploaded_file is not None:
             st.write("Erreur de conversion des données en JSON : ", e)
             st.stop()
 
-        # Tester l'API avec les données JSON
+        # Utiliser l'URL de l'API déployée sur PythonAnywhere
         try:
-            response = requests.post('http://127.0.0.1:5000/predict', json=data_json)
+            response = requests.post('https://khatchik.pythonanywhere.com/predict', json=data_json)
             if response.status_code == 200:
                 predictions = response.json()
                 st.write(predictions)
