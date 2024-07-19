@@ -4,44 +4,30 @@ import pandas as pd
 import json
 import numpy as np
 
-st.title('API de Scoring de Crédit')
+# Charger le fichier CSV
+file = st.file_uploader("Choisir un fichier CSV", type="csv")
 
-uploaded_file = st.file_uploader("Choisir un fichier CSV pour prédiction", type="csv")
-if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
-    
-    # Remplacer les valeurs infinies et NaN
-    data.replace([np.inf, -np.inf], np.nan, inplace=True)
-    data.fillna(0, inplace=True)
-    
-    # Optimisation des types de données
-    for col in data.select_dtypes(include=['float64']).columns:
-        data[col] = data[col].astype('float32')
-    for col in data.select_dtypes(include(['int64']).columns):
-        data[col] = data[col].astype('int32')
+if file is not None:
+    data = pd.read_csv(file)
 
-    st.write(data)
+    # Afficher les premières lignes du fichier
+    st.write("Aperçu des données :")
+    st.write(data.head())
 
-    if st.button('Faire une prédiction'):
-        # Convertir les données en JSON
-        try:
-            data_json = data.to_dict(orient='records')
-            data_json_str = json.dumps(data_json, indent=4)  # Convertir en chaîne JSON
-            st.write("Données JSON : ", data_json_str)  # Afficher les données JSON pour vérification
-        except Exception as e:
-            st.write("Erreur de conversion des données en JSON : ", e)
-            st.stop()
+    # Convertir les données en JSON
+    data_json = data.to_dict(orient='records')
 
-        # Utiliser l'URL de l'API déployée sur PythonAnywhere
-        try:
-            response = requests.post('https://khatchik.pythonanywhere.com/predict', json=data_json)
-            if response.status_code == 200:
-                predictions = response.json()
-                st.write(predictions)
-            else:
-                st.write('Erreur : ', response.status_code)
-                st.write('Contenu de la réponse : ', response.text)
-        except Exception as e:
-            st.write("Erreur lors de la requête à l'API : ", e)
+    # Afficher les données JSON
+    st.write("Données JSON : ")
+    st.write(data_json)
 
-st.write("Utilisez ce formulaire pour tester l'API de prédiction de crédit.")
+    # Envoyer la requête POST à l'API
+    response = requests.post('http://khatchik.pythonanywhere.com/predict', json=data_json)
+
+    # Afficher la réponse de l'API
+    if response.status_code == 200:
+        st.write("Prédictions :")
+        st.write(response.json())
+    else:
+        st.write("Erreur lors de la requête à l'API :")
+        st.write(response.text)
