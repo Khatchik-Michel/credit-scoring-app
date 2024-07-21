@@ -1,38 +1,37 @@
+import unittest
+#from unittest.mock import patch
 import pandas as pd
+import json
 import requests
-import streamlit as st
 
-# Titre de l'application
-st.title("Test de l'API de Prédiction")
 
-# Charger le fichier CSV
-file = st.file_uploader("Choisir un fichier CSV", type="csv")
+class TestFlaskAPI(unittest.TestCase):
 
-if file is not None:
-    data = pd.read_csv(file)
+    def test_change_model_endpoint_400(self):
+        model_id = None
+        # Create data for the POST request
+        data = {"model_id": model_id}
+        response = requests.post('http://localhost:80/new_model', data=json.dumps(data), headers={'Content-Type': 'application/json'})
+        self.assertEqual(response.status_code, 400)
 
-    # Afficher les premières lignes du fichier
-    st.write("Aperçu des données :")
-    st.write(data.head())
+    def test_predict_endpoint_with_valid_data(self):
+        X = pd.read_csv("./test/X_head", index_col=0)
+        data = X.to_json(orient='records')
+        response = requests.post('http://localhost:80/predict', data=data)
+        self.assertEqual(response.status_code, 200)
 
-    # Convertir les données en JSON
-    data_json = data.to_dict(orient='records')
+    def test_get_dataset_version(self):
+        response = requests.get('http://localhost:80/version')
+        self.assertEqual(response.json(),"2.0" )
 
-    # Afficher les données JSON pour vérification
-    st.write("Données JSON : ")
-    st.write(data_json)
 
-    # Envoyer la requête POST à l'API
-    try:
-        response = requests.post('http://127.0.0.1:5000/predict', json=data_json)
+    def test_get_dataset_threshold(self):
+        response = requests.get('http://localhost:80/threshold')
+        self.assertEqual(response.json(),"0.1" )
 
-        # Afficher la réponse de l'API
-        if response.status_code == 200:
-            st.write("Prédictions :")
-            st.write(response.json())
-        else:
-            st.write("Erreur lors de la requête à l'API :")
-            st.write(response.text)
-    except requests.exceptions.RequestException as e:
-        st.write("Erreur lors de la requête à l'API :")
-        st.write(str(e))
+
+
+
+
+if __name__ == '__main__':
+    unittest.main()
