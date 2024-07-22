@@ -4,9 +4,8 @@ import pandas as pd
 import json
 import requests
 
-
 class TestFlaskAPI(unittest.TestCase):
-    api_ip = 'http://192.168.99.89:5001'  #deuxieme IP si executer pas sur la même machine
+    api_ip = 'http://127.0.0.1:5001'  #deuxieme IP si executer pas sur la même machine
 
     def test_change_model_endpoint_400(self):
         model_id = None
@@ -30,7 +29,6 @@ class TestFlaskAPI(unittest.TestCase):
         response = requests.get(f'{self.api_ip}/threshold')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), "0.1")
-
 
 if __name__ == '__main__':
     unittest.main()
