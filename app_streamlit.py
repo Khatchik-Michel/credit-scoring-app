@@ -18,7 +18,7 @@ if uploaded_file is not None:
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
         # Appel à l'API
-        response = requests.post("http://127.0.0.1:5000/predict", data=json.dumps(data_json), headers={"Content-Type": "application/json"})
+        response = requests.post("http://127.0.0.1:5001/predict", data=json.dumps(data_json), headers={"Content-Type": "application/json"})
         
         if response.status_code == 200:
             predictions = response.json()
