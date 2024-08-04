@@ -30,7 +30,7 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)  # Vérifiez le format des données envoyées
+        st.write("Données envoyées à l'API:", data_json) 
     else:
         # Liste déroulante pour choisir l'ID
         selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
@@ -38,7 +38,7 @@ if uploaded_file is not None:
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
         data_json = selected_data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)  # Vérifiez le format des données envoyées
+        st.write("Données envoyées à l'API:", data_json)  
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
