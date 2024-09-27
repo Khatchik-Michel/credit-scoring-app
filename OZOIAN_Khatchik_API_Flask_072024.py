@@ -24,6 +24,13 @@ model = joblib.load(model_path)
 # Obtenir les noms des caractéristiques du modèle
 expected_features = model.feature_names_in_
 
+@app.route('/')
+def home():
+    """
+    Route pour la page d'accueil.
+    """
+    return "Bienvenue sur l'API de Scoring de Crédit!"
+
 @app.route('/new_model', methods=['POST'])
 def new_model():
     """
