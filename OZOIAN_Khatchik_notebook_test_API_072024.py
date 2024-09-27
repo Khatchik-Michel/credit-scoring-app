@@ -42,8 +42,9 @@ if uploaded_file is not None:
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
-        # Appel à l'API
-        response = requests.post("http://192.168.2.103:5001/predict", json=data_json, headers={"Content-Type": "application/json"})
+        # Appel à l'API Flask (URL de ton API déployée sur Render)
+        api_url = "https://credit-scoring-app-voah.onrender.com/predict"
+        response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
         
         if response.status_code == 200:
             st.session_state['predictions'] = response.json()
@@ -61,5 +62,5 @@ if st.session_state['predictions'] is not None:
 if st.button("Visualiser l'importance des features"):
     st.write("Affichage de l'importance des features globales et locales")
     # Assurez-vous que les chemins vers les images sont corrects
-    st.image("credit-scoring-app/global_importance.png", caption='Importance globale des features')
-    st.image("credit-scoring-app/local_importance.png", caption='Importance locale des features')
+    st.image("global_importance.png", caption='Importance globale des features')
+    st.image("local_importance.png", caption='Importance locale des features')
