@@ -30,7 +30,7 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)  
+        st.write("Données envoyées à l'API:", data_json) 
     else:
         # Liste déroulante pour choisir l'ID
         selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
@@ -38,12 +38,12 @@ if uploaded_file is not None:
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
         data_json = selected_data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json) 
+        st.write("Données envoyées à l'API:", data_json)  
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
         # Appel à l'API
-        response = requests.post("http://127.0.0.1:5001/predict", json=data_json, headers={"Content-Type": "application/json"})
+        response = requests.post("http://192.168.2.103:5001/predict", json=data_json, headers={"Content-Type": "application/json"})
         
         if response.status_code == 200:
             st.session_state['predictions'] = response.json()
@@ -61,5 +61,5 @@ if st.session_state['predictions'] is not None:
 if st.button("Visualiser l'importance des features"):
     st.write("Affichage de l'importance des features globales et locales")
     # Assurez-vous que les chemins vers les images sont corrects
-    st.image("C:/Users/Pc Portable Michel/Downloads/app/global_importance.png", caption='Importance globale des features')
-    st.image("C:/Users/Pc Portable Michel/Downloads/app/local_importance.png", caption='Importance locale des features')
+    st.image("credit-scoring-app/global_importance.png", caption='Importance globale des features')
+    st.image("credit-scoring-app/local_importance.png", caption='Importance locale des features')
