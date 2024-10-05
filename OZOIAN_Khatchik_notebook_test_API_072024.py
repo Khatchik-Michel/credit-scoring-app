@@ -31,7 +31,8 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json) 
+        # Masquer les données envoyées, ne montrer que la confirmation
+        st.write("Données prêtes à être envoyées à l'API.")
     else:
         # Liste déroulante pour choisir l'ID
         selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
@@ -39,8 +40,9 @@ if uploaded_file is not None:
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
         data_json = selected_data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)  
-    
+        # Masquer les données envoyées, ne montrer que la confirmation
+        st.write("Données prêtes à être envoyées à l'API.")
+
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
         # Appel à l'API Flask (URL de ton API déployée sur Render)
@@ -48,21 +50,11 @@ if uploaded_file is not None:
         response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
         
         if response.status_code == 200:
+            # Stocker les prédictions dans l'état de la session
             st.session_state['predictions'] = response.json()
-
-            # Après la prédiction, ajouter la colonne TARGET ou équivalente
-            predictions = st.session_state['predictions']
-            
-            if predire_tous:
-                # Ajouter une colonne 'TARGET' aux données (exemple: 1 pour classe positive)
-                for i, pred in enumerate(predictions):
-                    data.loc[i, 'TARGET'] = pred.get('1')  # '1' correspondant à la probabilité de la classe positive
-            else:
-                # Ajouter la prédiction à selected_data pour un seul ID
-                selected_data['TARGET'] = predictions[0].get('1')
-
             st.write("Prédictions effectuées avec succès.")
         else:
+            # Gérer l'erreur 502 ou toute autre erreur
             st.write("Erreur dans l'appel à l'API")
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
@@ -75,6 +67,15 @@ if uploaded_file is not None:
         features = data.columns.tolist()
         feature_1 = st.selectbox("Choisissez la première feature", features)
         feature_2 = st.selectbox("Choisissez la deuxième feature", features)
+
+        # Ajouter une colonne 'TARGET' basée sur les prédictions
+        if predire_tous:
+            # Pour tous les IDs
+            for i, pred in enumerate(st.session_state['predictions']):
+                data.loc[i, 'TARGET'] = pred.get('1')  # Probabilité de la classe positive
+        else:
+            # Pour un seul ID
+            selected_data['TARGET'] = st.session_state['predictions'][0].get('1')
 
         # Distribution de la première feature par classe
         fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
