@@ -3,7 +3,8 @@ import pandas as pd
 import requests
 import json
 import numpy as np
-import plotly.graph_objects as go  # Import nécessaire pour la jauge
+import plotly.express as px
+import plotly.graph_objects as go  # Import nécessaire pour les graphiques
 
 st.title("Application de Scoring de Crédit")
 
@@ -59,75 +60,38 @@ if st.session_state['predictions'] is not None:
     st.write("**Prédictions**")
     st.write(st.session_state['predictions'])
 
-    # Définir le seuil
-    threshold = 0.5  # Vous pouvez ajuster le seuil selon vos besoins
+# Sélection des features pour l'analyse des distributions
+if uploaded_file is not None:
+    st.subheader("Analyse des Features Sélectionnées")
 
-    # Si on a prédit pour un seul ID
-    if not predire_tous:
-        # Extraction de la probabilité de la classe positive (1)
-        prediction = st.session_state['predictions'][0]  # On récupère le premier élément
-        score = prediction[1] if isinstance(prediction, list) else prediction.get('1')
+    # Liste déroulante pour choisir la feature à visualiser
+    selected_feature = st.selectbox("Choisissez une feature à visualiser", data.columns)
 
-        if score is not None:
-            id_curr = selected_id
-            st.write(f"**Score pour l'ID {id_curr}: {score:.2f}**")
+    # Distribution de la feature en fonction des classes
+    if 'TARGET' in data.columns:  # Assurez-vous que la colonne de la classe existe
+        fig1 = px.histogram(data, x=selected_feature, color='TARGET', marginal="box", nbins=30,
+                            title=f"Distribution de la feature '{selected_feature}' selon les classes")
+        st.plotly_chart(fig1, use_container_width=True)
 
-            # Création de la jauge
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=score,
-                title={'text': f"Score pour l'ID {id_curr}"},
-                gauge={
-                    'axis': {'range': [0, 1]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, threshold], 'color': "red"},
-                        {'range': [threshold, 1], 'color': "green"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "black", 'width': 4},
-                        'thickness': 0.75,
-                        'value': threshold
-                    }
-                }
-            ))
+        # Positionnement de la valeur du client
+        if not predire_tous:
+            client_value = selected_data[selected_feature].values[0]
+            fig2 = go.Figure()
 
-            # Affichage de la jauge
-            st.plotly_chart(fig, use_container_width=True)
-    else:
-        # Si on a prédit pour tous les IDs
-        for idx, prediction in enumerate(st.session_state['predictions']):
-            # Extraction de la probabilité de la classe positive (1)
-            score = prediction[1] if isinstance(prediction, list) else prediction.get('1')
+            # Ajout de la distribution générale de la feature
+            fig2.add_trace(go.Histogram(x=data[selected_feature], nbinsx=30, name='Distribution globale'))
 
-            if score is not None:
-                id_curr = data['SK_ID_CURR'].iloc[idx]
-                st.write(f"**Score pour l'ID {id_curr}: {score:.2f}**")
+            # Ajout de la valeur du client sous forme de ligne verticale
+            fig2.add_trace(go.Scatter(x=[client_value, client_value], y=[0, 10], mode='lines', name=f'Valeur client {client_value}',
+                                      line=dict(color='red', width=3)))
 
-                # Création de la jauge
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=score,
-                    title={'text': f"Score pour l'ID {id_curr}"},
-                    gauge={
-                        'axis': {'range': [0, 1]},
-                        'bar': {'color': "darkblue"},
-                        'steps': [
-                            {'range': [0, threshold], 'color': "red"},
-                            {'range': [threshold, 1], 'color': "green"}
-                        ],
-                        'threshold': {
-                            'line': {'color': "black", 'width': 4},
-                            'thickness': 0.75,
-                            'value': threshold
-                        }
-                    }
-                ))
+            fig2.update_layout(title=f"Positionnement de la valeur client pour '{selected_feature}'",
+                               xaxis_title=selected_feature,
+                               yaxis_title="Nombre d'occurrences",
+                               showlegend=True)
+            st.plotly_chart(fig2, use_container_width=True)
 
-                # Affichage de la jauge
-                st.plotly_chart(fig, use_container_width=True)
-
-# Visualisation des résultats
+# Visualisation des résultats (importance des features)
 if st.button("Visualiser l'importance des features"):
     st.write("Affichage de l'importance des features globales et locales")
     # Assurez-vous que les chemins vers les images sont corrects
