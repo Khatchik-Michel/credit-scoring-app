@@ -66,14 +66,7 @@ if st.session_state['predictions'] is not None:
     if not predire_tous:
         # Extraction de la probabilité de la classe positive (1)
         prediction = st.session_state['predictions'][0]  # On récupère le premier élément
-        # Vérifier si les clés sont des chaînes ou des entiers
-        if '1' in prediction:
-            score = prediction['1']
-        elif 1 in prediction:
-            score = prediction[1]
-        else:
-            st.write("Format de prédiction inattendu.")
-            score = None
+        score = prediction[1] if isinstance(prediction, list) else prediction.get('1')
 
         if score is not None:
             id_curr = selected_id
@@ -105,39 +98,34 @@ if st.session_state['predictions'] is not None:
         # Si on a prédit pour tous les IDs
         for idx, prediction in enumerate(st.session_state['predictions']):
             # Extraction de la probabilité de la classe positive (1)
-            if '1' in prediction:
-                score = prediction['1']
-            elif 1 in prediction:
-                score = prediction[1]
-            else:
-                st.write(f"Format de prédiction inattendu pour l'index {idx}.")
-                continue  # Passer à la prédiction suivante
+            score = prediction[1] if isinstance(prediction, list) else prediction.get('1')
 
-            id_curr = data['SK_ID_CURR'].iloc[idx]
-            st.write(f"**Score pour l'ID {id_curr}: {score:.2f}**")
+            if score is not None:
+                id_curr = data['SK_ID_CURR'].iloc[idx]
+                st.write(f"**Score pour l'ID {id_curr}: {score:.2f}**")
 
-            # Création de la jauge
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=score,
-                title={'text': f"Score pour l'ID {id_curr}"},
-                gauge={
-                    'axis': {'range': [0, 1]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, threshold], 'color': "red"},
-                        {'range': [threshold, 1], 'color': "green"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "black", 'width': 4},
-                        'thickness': 0.75,
-                        'value': threshold
+                # Création de la jauge
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=score,
+                    title={'text': f"Score pour l'ID {id_curr}"},
+                    gauge={
+                        'axis': {'range': [0, 1]},
+                        'bar': {'color': "darkblue"},
+                        'steps': [
+                            {'range': [0, threshold], 'color': "red"},
+                            {'range': [threshold, 1], 'color': "green"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "black", 'width': 4},
+                            'thickness': 0.75,
+                            'value': threshold
+                        }
                     }
-                }
-            ))
+                ))
 
-            # Affichage de la jauge
-            st.plotly_chart(fig, use_container_width=True)
+                # Affichage de la jauge
+                st.plotly_chart(fig, use_container_width=True)
 
 # Visualisation des résultats
 if st.button("Visualiser l'importance des features"):
