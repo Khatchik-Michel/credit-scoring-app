@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import requests
-import json
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go  # Import nécessaire pour les graphiques
+import plotly.graph_objects as go
 
-st.title("Application de Scoring de Crédit")
+st.title("Dashboard de Scoring de Crédit")
 
 # Initialiser les variables de session pour les prédictions
 if 'predictions' not in st.session_state:
@@ -21,10 +20,15 @@ if uploaded_file is not None:
 
     # Nettoyage des données
     data = data.replace([np.inf, -np.inf], np.nan).fillna(0)
-    
+
     # Conversion des colonnes en types numériques
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
+
+    # Liste déroulante pour sélectionner deux features à analyser
+    features = data.columns.tolist()
+    feature_1 = st.selectbox("Choisissez la première feature", features)
+    feature_2 = st.selectbox("Choisissez la deuxième feature", features)
 
     # Choisir entre prédire pour tous les IDs ou un ID spécifique
     predire_tous = st.checkbox("Prédire pour tous les IDs", value=True)
@@ -55,45 +59,38 @@ if uploaded_file is not None:
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
 
-# Afficher les prédictions si elles existent
-if st.session_state['predictions'] is not None:
-    st.write("**Prédictions**")
-    st.write(st.session_state['predictions'])
+    # Graphiques des distributions de features
+    if st.session_state['predictions'] is not None:
+        st.write("**Distribution des features par classe**")
+        
+        # Distribution de la première feature par classe
+        fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
+        st.plotly_chart(fig1)
 
-# Sélection des features pour l'analyse des distributions
-if uploaded_file is not None:
-    st.subheader("Analyse des Features Sélectionnées")
+        # Distribution de la deuxième feature par classe
+        fig2 = px.histogram(data, x=feature_2, color="TARGET", nbins=50, title=f"Distribution de {feature_2} par classe")
+        st.plotly_chart(fig2)
 
-    # Liste déroulante pour choisir la feature à visualiser
-    selected_feature = st.selectbox("Choisissez une feature à visualiser", data.columns)
+    # Graphique bi-variée avec dégradé de couleur selon le score
+    if st.session_state['predictions'] is not None:
+        st.write("**Analyse bi-variée des features avec dégradé selon le score**")
 
-    # Distribution de la feature en fonction des classes
-    if 'TARGET' in data.columns:  # Assurez-vous que la colonne de la classe existe
-        fig1 = px.histogram(data, x=selected_feature, color='TARGET', marginal="box", nbins=30,
-                            title=f"Distribution de la feature '{selected_feature}' selon les classes")
-        st.plotly_chart(fig1, use_container_width=True)
-
-        # Positionnement de la valeur du client
         if not predire_tous:
-            client_value = selected_data[selected_feature].values[0]
-            fig2 = go.Figure()
+            # Ajout du score aux données pour une analyse bi-variée
+            score = st.session_state['predictions'][0].get('1')  # Probabilité pour la classe 1
+            selected_data['score'] = score
+            
+            fig3 = px.scatter(data, x=feature_1, y=feature_2, color=selected_data['score'], title="Analyse bi-variée")
+            st.plotly_chart(fig3)
 
-            # Ajout de la distribution générale de la feature
-            fig2.add_trace(go.Histogram(x=data[selected_feature], nbinsx=30, name='Distribution globale'))
+# Tableau de bord d'informations sur le client
+if not predire_tous:
+    st.write("**Informations sur le client sélectionné**")
+    st.write(f"ID Client: {selected_id}")
+    st.write(f"Score: {score}")
+    st.write(selected_data)
 
-            # Ajout de la valeur du client sous forme de ligne verticale
-            fig2.add_trace(go.Scatter(x=[client_value, client_value], y=[0, 10], mode='lines', name=f'Valeur client {client_value}',
-                                      line=dict(color='red', width=3)))
-
-            fig2.update_layout(title=f"Positionnement de la valeur client pour '{selected_feature}'",
-                               xaxis_title=selected_feature,
-                               yaxis_title="Nombre d'occurrences",
-                               showlegend=True)
-            st.plotly_chart(fig2, use_container_width=True)
-
-# Visualisation des résultats (importance des features)
-if st.button("Visualiser l'importance des features"):
-    st.write("Affichage de l'importance des features globales et locales")
-    # Assurez-vous que les chemins vers les images sont corrects
-    st.image("global_importance.png", caption='Importance globale des features')
-    st.image("local_importance.png", caption='Importance locale des features')
+# Autres graphiques pour les autres clients
+if predire_tous:
+    st.write("**Informations sur les autres clients**")
+    st.write(data[['SK_ID_CURR', 'TARGET']].head())
