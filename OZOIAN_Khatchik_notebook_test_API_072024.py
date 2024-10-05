@@ -83,14 +83,16 @@ if uploaded_file is not None:
             fig3 = px.scatter(data, x=feature_1, y=feature_2, color=selected_data['score'], title="Analyse bi-variée")
             st.plotly_chart(fig3)
 
-# Tableau de bord d'informations sur le client
-if not predire_tous:
-    st.write("**Informations sur le client sélectionné**")
-    st.write(f"ID Client: {selected_id}")
-    st.write(f"Score: {score}")
-    st.write(selected_data)
+    # Tableau de bord d'informations sur le client
+    if not predire_tous:
+        st.write("**Informations sur le client sélectionné**")
+        st.write(f"ID Client: {selected_id}")
+        st.write(f"Score: {score}")
+        st.write(selected_data)
 
-# Autres graphiques pour les autres clients
-if predire_tous:
-    st.write("**Informations sur les autres clients**")
-    st.write(data[['SK_ID_CURR', 'TARGET']].head())
+    # Autres graphiques pour les autres clients
+    if predire_tous:
+        st.write("**Informations sur les autres clients**")
+        st.write(data[['SK_ID_CURR', 'TARGET']].head())
+else:
+    st.write("Veuillez télécharger un fichier CSV pour commencer.")
