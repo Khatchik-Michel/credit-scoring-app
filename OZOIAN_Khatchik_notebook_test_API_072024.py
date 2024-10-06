@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import requests
+import json
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-st.title("Dashboard de Scoring de Crédit")
+st.title("Application de Scoring de Crédit")
 
 # Initialiser les variables de session pour les prédictions
 if 'predictions' not in st.session_state:
@@ -20,7 +22,7 @@ if uploaded_file is not None:
 
     # Nettoyage des données
     data = data.replace([np.inf, -np.inf], np.nan).fillna(0)
-
+    
     # Conversion des colonnes en types numériques
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
@@ -31,7 +33,7 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        st.write("Données prêtes à être envoyées à l'API.")
+        st.write("Données envoyées à l'API:", data_json) 
     else:
         # Liste déroulante pour choisir l'ID
         selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
@@ -39,8 +41,8 @@ if uploaded_file is not None:
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
         data_json = selected_data.to_dict(orient='records')
-        st.write("Données prêtes à être envoyées à l'API.")
-
+        st.write("Données envoyées à l'API:", data_json)  
+    
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
         # Appel à l'API Flask (URL de ton API déployée sur Render)
@@ -48,70 +50,71 @@ if uploaded_file is not None:
         response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
         
         if response.status_code == 200:
-            # Stocker les prédictions dans l'état de la session
             st.session_state['predictions'] = response.json()
-            st.write("Prédictions effectuées avec succès.")
-            
-            # Afficher la structure des prédictions pour débogage
-            st.write("Structure des prédictions:", st.session_state['predictions'])
-            
-            # Vérification du format des prédictions et ajout de la colonne 'TARGET'
-            if predire_tous:
-                # Pour tous les IDs, accès aux probabilités de la classe 1
-                for i, pred in enumerate(st.session_state['predictions']):
-                    if isinstance(pred, list) and len(pred) == 2:
-                        # Accéder au niveau supplémentaire
-                        if isinstance(pred[0], list) and len(pred[0]) == 2:
-                            data.loc[i, 'TARGET'] = pred[0][1]  # Ajouter la probabilité de la classe 1
-                        else:
-                            st.write(f"Erreur : La structure des prédictions n'est pas reconnue pour l'ID {i}.")
-            else:
-                # Pour un seul ID, accès à la probabilité de la classe 1
-                pred = st.session_state['predictions'][0]
-                if isinstance(pred, list) and len(pred) == 2:
-                    if isinstance(pred[0], list) and len(pred[0]) == 2:
-                        selected_data.loc[selected_data.index, 'TARGET'] = pred[0][1]  # Ajouter la probabilité de la classe 1
-                    else:
-                        st.write("Erreur : La structure des prédictions pour l'ID sélectionné n'est pas reconnue.")
         else:
             st.write("Erreur dans l'appel à l'API")
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
 
-    # Si les prédictions sont effectuées, afficher les graphiques et les informations du client
-    if st.session_state['predictions'] is not None and 'TARGET' in data.columns:
-        st.write("**Distribution des features par classe après prédiction**")
+# Afficher les prédictions si elles existent
+if st.session_state['predictions'] is not None:
+    st.write("Prédictions")
+    for prediction in st.session_state['predictions']:
+        client_id = prediction['SK_ID_CURR']
+        score = prediction['score']
+        accepted = "Accepté" if score >= 0.5 else "Refusé"
+        st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
         
-        # Liste déroulante pour sélectionner deux features à analyser
-        features = data.columns.tolist()
-        feature_1 = st.selectbox("Choisissez la première feature", features)
-        feature_2 = st.selectbox("Choisissez la deuxième feature", features)
+        # Jauge pour visualiser le score
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=score,
+            title={'text': "Score de Crédit"},
+            gauge={
+                'axis': {'range': [0, 1]},
+                'bar': {'color': "green" if score >= 0.5 else "red"},
+                'steps': [
+                    {'range': [0, 0.5], 'color': "lightcoral"},
+                    {'range': [0.5, 1], 'color': "lightgreen"}
+                ]
+            }
+        ))
+        st.plotly_chart(fig)
 
-        # Distribution de la première feature par classe
-        fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
-        st.plotly_chart(fig1)
+        # Feature importance locale
+        if 'local_importance' in prediction:
+            local_importance = prediction['local_importance']
+            fig, ax = plt.subplots()
+            sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
+            ax.set_title(f"Importance locale des features pour le client {client_id}")
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            st.pyplot(fig)
 
-        # Distribution de la deuxième feature par classe
-        fig2 = px.histogram(data, x=feature_2, color="TARGET", nbins=50, title=f"Distribution de {feature_2} par classe")
-        st.plotly_chart(fig2)
-
-        # Graphique bi-variée avec dégradé de couleur selon le score
-        st.write("**Analyse bi-variée des features avec dégradé selon le score**")
-        fig3 = px.scatter(data, x=feature_1, y=feature_2, color="TARGET", title="Analyse bi-variée")
-        st.plotly_chart(fig3)
+# Visualisation des résultats
+if uploaded_file is not None:
+    features = data.columns.tolist()
+    selected_features = st.multiselect("Choisissez deux features pour l'analyse", features, default=features[:2])
+    
+    if len(selected_features) == 2:
+        # Graphiques de distribution des features sélectionnées
+        fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+        for i, feature in enumerate(selected_features):
+            sns.histplot(data, x=feature, hue='TARGET', kde=True, ax=ax[i])
+            ax[i].set_title(f"Distribution de {feature} selon les classes")
+        st.pyplot(fig)
         
-        # Afficher les informations du client sélectionné et son score
-        if not predire_tous:
-            st.write(f"**Informations du client sélectionné :** ID = {selected_id}")
-            st.write(selected_data)
-            st.write(f"Score du client (probabilité de la classe 1) : {selected_data['TARGET'].values[0]}")
+        # Graphique d'analyse bi-variée entre les deux features
+        fig, ax = plt.subplots()
+        scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['score'], cmap='viridis', alpha=0.6)
+        ax.set_xlabel(selected_features[0])
+        ax.set_ylabel(selected_features[1])
+        ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
+        plt.colorbar(scatter, label='Score')
+        st.pyplot(fig)
 
-    # Ajouter des fonctionnalités déjà existantes, par exemple :
-    # Visualisation des importances globales et locales des features si disponible
-    if st.button("Visualiser l'importance des features"):
-        st.write("Affichage de l'importance des features globales et locales")
-        st.image("global_importance.png", caption='Importance globale des features')
-        st.image("local_importance.png", caption='Importance locale des features')
-
-else:
-    st.write("Veuillez télécharger un fichier CSV pour commencer.")
+# Feature importance globale
+if st.button("Visualiser l'importance des features"):
+    st.write("Affichage de l'importance des features globales et locales")
+    # Assurez-vous que les chemins vers les images sont corrects
+    st.image("global_importance.png", caption='Importance globale des features')
+    st.image("local_importance.png", caption='Importance locale des features')
