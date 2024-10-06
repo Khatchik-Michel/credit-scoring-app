@@ -52,38 +52,42 @@ if uploaded_file is not None:
             st.session_state['predictions'] = response.json()
             st.write("Prédictions effectuées avec succès.")
             
-            # Afficher la structure des prédictions pour débogage
+            # Afficher la structure des prédictions pour comprendre leur format
             st.write("Structure des prédictions:", st.session_state['predictions'])
+            
+            # Vérification du format des prédictions pour ajouter la colonne TARGET correctement
+            if predire_tous:
+                for i, pred in enumerate(st.session_state['predictions']):
+                    st.write(f"Prédiction pour ID {i}: {pred}")  # Affichage pour vérifier la structure
+                    # Supposons que la prédiction soit un float ou dict avec un score direct
+                    if isinstance(pred, dict) and 'score' in pred:  # Ajustez 'score' en fonction de la clé correcte
+                        data.loc[i, 'TARGET'] = pred['score']  # Changez 'score' pour la clé correcte si nécessaire
+                    elif isinstance(pred, float):  # Si la prédiction est un score direct
+                        data.loc[i, 'TARGET'] = pred
+                    else:
+                        st.write(f"Erreur : La structure des prédictions n'est pas reconnue pour l'ID {i}.")
+            else:
+                # Pour un seul ID, ajout de la prédiction dans 'TARGET'
+                pred = st.session_state['predictions'][0]
+                if isinstance(pred, dict) and 'score' in pred:  # Ajustez 'score' selon la clé correcte
+                    selected_data.loc[selected_data.index, 'TARGET'] = pred['score']
+                elif isinstance(pred, float):
+                    selected_data.loc[selected_data.index, 'TARGET'] = pred
+                else:
+                    st.write("Erreur : La structure des prédictions pour l'ID sélectionné n'est pas reconnue.")
         else:
             st.write("Erreur dans l'appel à l'API")
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
 
     # Si les prédictions sont effectuées, afficher les graphiques
-    if st.session_state['predictions'] is not None:
+    if st.session_state['predictions'] is not None and 'TARGET' in data.columns:
         st.write("**Distribution des features par classe après prédiction**")
         
         # Liste déroulante pour sélectionner deux features à analyser
         features = data.columns.tolist()
         feature_1 = st.selectbox("Choisissez la première feature", features)
         feature_2 = st.selectbox("Choisissez la deuxième feature", features)
-
-        # Vérifier la structure des prédictions avant d'accéder à '1'
-        if predire_tous:
-            # Pour tous les IDs
-            for i, pred in enumerate(st.session_state['predictions']):
-                st.write(f"Prédiction pour ID {i}: {pred}")  # Afficher chaque prédiction pour vérifier sa structure
-                if isinstance(pred, dict) and '1' in pred:
-                    data.loc[i, 'TARGET'] = pred['1']  # Probabilité de la classe positive
-                else:
-                    st.write(f"Erreur : La clé '1' n'existe pas dans la prédiction pour l'ID {i}.")
-        else:
-            # Pour un seul ID, ajoutez la prédiction en tant que valeur dans la colonne 'TARGET'
-            score = st.session_state['predictions'][0].get('1') if isinstance(st.session_state['predictions'][0], dict) else None
-            if score is not None:
-                selected_data.loc[selected_data.index, 'TARGET'] = score
-            else:
-                st.write("Erreur : La clé '1' n'existe pas dans les prédictions pour l'ID sélectionné.")
 
         # Distribution de la première feature par classe
         fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
@@ -97,5 +101,7 @@ if uploaded_file is not None:
         st.write("**Analyse bi-variée des features avec dégradé selon le score**")
         fig3 = px.scatter(data, x=feature_1, y=feature_2, color="TARGET", title="Analyse bi-variée")
         st.plotly_chart(fig3)
+    else:
+        st.write("Erreur : La colonne 'TARGET' n'a pas été ajoutée correctement.")
 else:
     st.write("Veuillez télécharger un fichier CSV pour commencer.")
