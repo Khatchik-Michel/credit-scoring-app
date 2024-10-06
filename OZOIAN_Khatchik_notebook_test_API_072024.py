@@ -64,26 +64,28 @@ if st.session_state['predictions'] is not None:
     
     # Vérifier si la réponse est une liste ou un dictionnaire
     if isinstance(predictions, list):
-        for idx, score in enumerate(predictions):
-            if isinstance(score, (int, float)) and score > 0.5:
-                accepted = "Accepté" if score >= 0.5 else "Refusé"
-                st.write(f"Crédit: {accepted}, Score: {score}")
-                
-                # Jauge pour visualiser le score
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=score,
-                    title={'text': "Score de Crédit"},
-                    gauge={
-                        'axis': {'range': [0, 1]},
-                        'bar': {'color': "green" if score >= 0.5 else "red"},
-                        'steps': [
-                            {'range': [0, 0.5], 'color': "lightcoral"},
-                            {'range': [0.5, 1], 'color': "lightgreen"}
-                        ]
-                    }
-                ))
-                st.plotly_chart(fig)
+        for idx, prediction_list in enumerate(predictions):
+            if isinstance(prediction_list, list):
+                for score in prediction_list:
+                    if isinstance(score, (int, float)) and score > 0.5:
+                        accepted = "Accepté" if score >= 0.5 else "Refusé"
+                        st.write(f"Crédit: {accepted}, Score: {score}")
+                        
+                        # Jauge pour visualiser le score
+                        fig = go.Figure(go.Indicator(
+                            mode="gauge+number",
+                            value=score,
+                            title={'text': "Score de Crédit"},
+                            gauge={
+                                'axis': {'range': [0, 1]},
+                                'bar': {'color': "green" if score >= 0.5 else "red"},
+                                'steps': [
+                                    {'range': [0, 0.5], 'color': "lightcoral"},
+                                    {'range': [0.5, 1], 'color': "lightgreen"}
+                                ]
+                            }
+                        ))
+                        st.plotly_chart(fig)
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
         score = predictions.get('score', 0)
