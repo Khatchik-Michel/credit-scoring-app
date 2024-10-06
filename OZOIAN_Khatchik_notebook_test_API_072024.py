@@ -65,35 +65,39 @@ if st.session_state['predictions'] is not None:
     # Vérifier si la réponse est une liste ou un dictionnaire
     if isinstance(predictions, list):
         for prediction in predictions:
-            client_id = prediction.get('SK_ID_CURR', "ID non spécifié")
-            score = prediction.get('score', 0)
-            accepted = "Accepté" if score >= 0.5 else "Refusé"
-            st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
-            
-            # Jauge pour visualiser le score
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=score,
-                title={'text': "Score de Crédit"},
-                gauge={
-                    'axis': {'range': [0, 1]},
-                    'bar': {'color': "green" if score >= 0.5 else "red"},
-                    'steps': [
-                        {'range': [0, 0.5], 'color': "lightcoral"},
-                        {'range': [0.5, 1], 'color': "lightgreen"}
-                    ]
-                }
-            ))
-            st.plotly_chart(fig)
+            st.write(f"Type de la prédiction : {type(prediction)}, Contenu : {prediction}")  # Ligne temporaire pour vérifier le format de chaque prédiction
+            if isinstance(prediction, dict):
+                client_id = prediction.get('SK_ID_CURR', "ID non spécifié")
+                score = prediction.get('score', 0)
+                accepted = "Accepté" if score >= 0.5 else "Refusé"
+                st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
+                
+                # Jauge pour visualiser le score
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=score,
+                    title={'text': "Score de Crédit"},
+                    gauge={
+                        'axis': {'range': [0, 1]},
+                        'bar': {'color': "green" if score >= 0.5 else "red"},
+                        'steps': [
+                            {'range': [0, 0.5], 'color': "lightcoral"},
+                            {'range': [0.5, 1], 'color': "lightgreen"}
+                        ]
+                    }
+                ))
+                st.plotly_chart(fig)
 
-            # Feature importance locale
-            if 'local_importance' in prediction:
-                local_importance = prediction['local_importance']
-                fig, ax = plt.subplots()
-                sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
-                ax.set_title(f"Importance locale des features pour le client {client_id}")
-                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-                st.pyplot(fig)
+                # Feature importance locale
+                if 'local_importance' in prediction:
+                    local_importance = prediction['local_importance']
+                    fig, ax = plt.subplots()
+                    sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
+                    ax.set_title(f"Importance locale des features pour le client {client_id}")
+                    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+                    st.pyplot(fig)
+            else:
+                st.write(f"Format inattendu pour la prédiction: {prediction}")
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
         client_id = predictions.get('SK_ID_CURR', "ID non spécifié")
@@ -125,6 +129,8 @@ if st.session_state['predictions'] is not None:
             ax.set_title(f"Importance locale des features pour le client {client_id}")
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
             st.pyplot(fig)
+    else:
+        st.write(f"Format inattendu pour les prédictions: {predictions}")
 
 # Visualisation des résultats
 if uploaded_file is not None:
