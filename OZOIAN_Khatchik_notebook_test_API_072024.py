@@ -65,7 +65,7 @@ if st.session_state['predictions'] is not None:
     # Vérifier si la réponse est une liste ou un dictionnaire
     if isinstance(predictions, list):
         for idx, score in enumerate(predictions):
-            if score > 0.5:
+            if isinstance(score, (int, float)) and score > 0.5:
                 accepted = "Accepté" if score >= 0.5 else "Refusé"
                 st.write(f"Crédit: {accepted}, Score: {score}")
                 
@@ -87,7 +87,7 @@ if st.session_state['predictions'] is not None:
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
         score = predictions.get('score', 0)
-        if score > 0.5:
+        if isinstance(score, (int, float)) and score > 0.5:
             accepted = "Accepté" if score >= 0.5 else "Refusé"
             st.write(f"Crédit: {accepted}, Score: {score}")
             
