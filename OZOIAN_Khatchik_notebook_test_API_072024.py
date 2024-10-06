@@ -31,7 +31,6 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        # Masquer les données envoyées, ne montrer que la confirmation
         st.write("Données prêtes à être envoyées à l'API.")
     else:
         # Liste déroulante pour choisir l'ID
@@ -40,7 +39,6 @@ if uploaded_file is not None:
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
         data_json = selected_data.to_dict(orient='records')
-        # Masquer les données envoyées, ne montrer que la confirmation
         st.write("Données prêtes à être envoyées à l'API.")
 
     # Bouton pour lancer les prédictions
@@ -53,8 +51,10 @@ if uploaded_file is not None:
             # Stocker les prédictions dans l'état de la session
             st.session_state['predictions'] = response.json()
             st.write("Prédictions effectuées avec succès.")
+            
+            # Afficher la structure des prédictions pour débogage
+            st.write("Structure des prédictions:", st.session_state['predictions'])
         else:
-            # Gérer l'erreur 502 ou toute autre erreur
             st.write("Erreur dans l'appel à l'API")
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
@@ -68,15 +68,22 @@ if uploaded_file is not None:
         feature_1 = st.selectbox("Choisissez la première feature", features)
         feature_2 = st.selectbox("Choisissez la deuxième feature", features)
 
-        # Ajouter une colonne 'TARGET' basée sur les prédictions
+        # Vérifier la structure des prédictions avant d'accéder à '1'
         if predire_tous:
             # Pour tous les IDs
             for i, pred in enumerate(st.session_state['predictions']):
-                data.loc[i, 'TARGET'] = pred.get('1')  # Probabilité de la classe positive
+                st.write(f"Prédiction pour ID {i}: {pred}")  # Afficher chaque prédiction pour vérifier sa structure
+                if isinstance(pred, dict) and '1' in pred:
+                    data.loc[i, 'TARGET'] = pred['1']  # Probabilité de la classe positive
+                else:
+                    st.write(f"Erreur : La clé '1' n'existe pas dans la prédiction pour l'ID {i}.")
         else:
-            # Pour un seul ID
-            score = st.session_state['predictions'][0].get('1')
-            selected_data.loc[selected_data.index,'TARGET'] = score
+            # Pour un seul ID, ajoutez la prédiction en tant que valeur dans la colonne 'TARGET'
+            score = st.session_state['predictions'][0].get('1') if isinstance(st.session_state['predictions'][0], dict) else None
+            if score is not None:
+                selected_data.loc[selected_data.index, 'TARGET'] = score
+            else:
+                st.write("Erreur : La clé '1' n'existe pas dans les prédictions pour l'ID sélectionné.")
 
         # Distribution de la première feature par classe
         fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
