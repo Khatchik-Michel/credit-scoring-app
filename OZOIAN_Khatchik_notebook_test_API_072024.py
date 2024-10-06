@@ -75,7 +75,8 @@ if uploaded_file is not None:
                 data.loc[i, 'TARGET'] = pred.get('1')  # Probabilité de la classe positive
         else:
             # Pour un seul ID
-            selected_data['TARGET'] = st.session_state['predictions'][0].get('1')
+            score = st.session_state['predictions'][0].get('1')
+            selected_data.loc[selected_data.index,'TARGET'] = score
 
         # Distribution de la première feature par classe
         fig1 = px.histogram(data, x=feature_1, color="TARGET", nbins=50, title=f"Distribution de {feature_1} par classe")
