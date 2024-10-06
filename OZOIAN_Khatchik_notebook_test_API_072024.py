@@ -52,27 +52,22 @@ if uploaded_file is not None:
             st.session_state['predictions'] = response.json()
             st.write("Prédictions effectuées avec succès.")
             
-            # Afficher la structure des prédictions pour comprendre leur format
+            # Afficher la structure des prédictions pour débogage
             st.write("Structure des prédictions:", st.session_state['predictions'])
             
-            # Vérification du format des prédictions pour ajouter la colonne TARGET correctement
+            # Vérification du format des prédictions et ajout de la colonne 'TARGET'
             if predire_tous:
+                # Pour tous les IDs, accès aux probabilités de la classe 1
                 for i, pred in enumerate(st.session_state['predictions']):
-                    st.write(f"Prédiction pour ID {i}: {pred}")  # Affichage pour vérifier la structure
-                    # Supposons que la prédiction soit un float ou dict avec un score direct
-                    if isinstance(pred, dict) and 'score' in pred:  # Ajustez 'score' en fonction de la clé correcte
-                        data.loc[i, 'TARGET'] = pred['score']  # Changez 'score' pour la clé correcte si nécessaire
-                    elif isinstance(pred, float):  # Si la prédiction est un score direct
-                        data.loc[i, 'TARGET'] = pred
+                    if isinstance(pred, list) and len(pred) == 2:
+                        data.loc[i, 'TARGET'] = pred[1]  # Ajouter la probabilité de la classe 1
                     else:
                         st.write(f"Erreur : La structure des prédictions n'est pas reconnue pour l'ID {i}.")
             else:
-                # Pour un seul ID, ajout de la prédiction dans 'TARGET'
+                # Pour un seul ID, accès à la probabilité de la classe 1
                 pred = st.session_state['predictions'][0]
-                if isinstance(pred, dict) and 'score' in pred:  # Ajustez 'score' selon la clé correcte
-                    selected_data.loc[selected_data.index, 'TARGET'] = pred['score']
-                elif isinstance(pred, float):
-                    selected_data.loc[selected_data.index, 'TARGET'] = pred
+                if isinstance(pred, list) and len(pred) == 2:
+                    selected_data.loc[selected_data.index, 'TARGET'] = pred[1]  # Ajouter la probabilité de la classe 1
                 else:
                     st.write("Erreur : La structure des prédictions pour l'ID sélectionné n'est pas reconnue.")
         else:
