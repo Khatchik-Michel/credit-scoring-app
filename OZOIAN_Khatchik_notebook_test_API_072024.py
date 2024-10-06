@@ -6,6 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 st.title("Application de Scoring de Crédit")
 
@@ -48,7 +49,7 @@ if uploaded_file is not None:
         # Appel à l'API Flask (URL de ton API déployée sur Render)
         api_url = "https://credit-scoring-app-voah.onrender.com/predict"
         try:
-            response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
+            response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"}, timeout=10)
             response.raise_for_status()
             st.session_state['predictions'] = response.json()
         except requests.exceptions.RequestException as e:
@@ -115,5 +116,11 @@ if uploaded_file is not None:
 if st.button("Visualiser l'importance des features"):
     st.write("Affichage de l'importance des features globales et locales")
     # Assurez-vous que les chemins vers les images sont corrects
-    st.image("global_importance.png", caption='Importance globale des features')
-    st.image("local_importance.png", caption='Importance locale des features')
+    if os.path.exists("global_importance.png"):
+        st.image("global_importance.png", caption='Importance globale des features')
+    else:
+        st.write("Image de l'importance globale des features introuvable")
+    if os.path.exists("local_importance.png"):
+        st.image("local_importance.png", caption='Importance locale des features')
+    else:
+        st.write("Image de l'importance locale des features introuvable")
