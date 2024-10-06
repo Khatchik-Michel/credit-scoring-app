@@ -33,7 +33,7 @@ if uploaded_file is not None:
     if predire_tous:
         # Préparation des données pour l'API (tous les IDs)
         data_json = data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json) 
+        st.write("Données envoyées à l'API:", data_json)
     else:
         # Liste déroulante pour choisir l'ID
         selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
@@ -47,14 +47,13 @@ if uploaded_file is not None:
     if st.button("Prédire"):
         # Appel à l'API Flask (URL de ton API déployée sur Render)
         api_url = "https://credit-scoring-app-voah.onrender.com/predict"
-        response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
-        
-        if response.status_code == 200:
+        try:
+            response = requests.post(api_url, json=data_json, headers={"Content-Type": "application/json"})
+            response.raise_for_status()
             st.session_state['predictions'] = response.json()
-        else:
+        except requests.exceptions.RequestException as e:
             st.write("Erreur dans l'appel à l'API")
-            st.write(f"Status Code: {response.status_code}")
-            st.write(f"Message: {response.text}")
+            st.write(f"Message: {str(e)}")
 
 # Afficher les prédictions si elles existent
 if st.session_state['predictions'] is not None:
