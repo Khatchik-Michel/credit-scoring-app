@@ -60,16 +60,19 @@ if uploaded_file is not None:
                 # Pour tous les IDs, accès aux probabilités de la classe 1
                 for i, pred in enumerate(st.session_state['predictions']):
                     if isinstance(pred, list) and len(pred) == 2:
-                        data.loc[i, 'TARGET'] = pred[1]  # Ajouter la probabilité de la classe 1
-                    else:
-                        st.write(f"Erreur : La structure des prédictions n'est pas reconnue pour l'ID {i}.")
+                        # Accéder au niveau supplémentaire
+                        if isinstance(pred[0], list) and len(pred[0]) == 2:
+                            data.loc[i, 'TARGET'] = pred[0][1]  # Ajouter la probabilité de la classe 1
+                        else:
+                            st.write(f"Erreur : La structure des prédictions n'est pas reconnue pour l'ID {i}.")
             else:
                 # Pour un seul ID, accès à la probabilité de la classe 1
                 pred = st.session_state['predictions'][0]
                 if isinstance(pred, list) and len(pred) == 2:
-                    selected_data.loc[selected_data.index, 'TARGET'] = pred[1]  # Ajouter la probabilité de la classe 1
-                else:
-                    st.write("Erreur : La structure des prédictions pour l'ID sélectionné n'est pas reconnue.")
+                    if isinstance(pred[0], list) and len(pred[0]) == 2:
+                        selected_data.loc[selected_data.index, 'TARGET'] = pred[0][1]  # Ajouter la probabilité de la classe 1
+                    else:
+                        st.write("Erreur : La structure des prédictions pour l'ID sélectionné n'est pas reconnue.")
         else:
             st.write("Erreur dans l'appel à l'API")
             st.write(f"Status Code: {response.status_code}")
