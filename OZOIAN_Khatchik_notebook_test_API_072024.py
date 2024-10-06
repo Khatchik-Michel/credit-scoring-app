@@ -59,11 +59,16 @@ if uploaded_file is not None:
 # Afficher les prédictions si elles existent
 if st.session_state['predictions'] is not None:
     st.write("Prédictions")
-    for prediction in st.session_state['predictions']:
+    predictions = st.session_state['predictions']
+    for prediction in predictions:
         client_id = prediction['SK_ID_CURR']
         score = prediction['score']
         accepted = "Accepté" if score >= 0.5 else "Refusé"
         st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
+        
+        # Ajouter la colonne 'TARGET' si elle manque
+        if 'TARGET' not in data.columns:
+            data['TARGET'] = [1 if score >= 0.5 else 0 for score in [p['score'] for p in predictions]]
         
         # Jauge pour visualiser le score
         fig = go.Figure(go.Indicator(
@@ -95,7 +100,7 @@ if uploaded_file is not None:
     features = data.columns.tolist()
     selected_features = st.multiselect("Choisissez deux features pour l'analyse", features, default=features[:2])
     
-    if len(selected_features) == 2:
+    if len(selected_features) == 2 and 'TARGET' in data.columns:
         # Graphiques de distribution des features sélectionnées
         fig, ax = plt.subplots(1, 2, figsize=(14, 5))
         for i, feature in enumerate(selected_features):
@@ -105,7 +110,7 @@ if uploaded_file is not None:
         
         # Graphique d'analyse bi-variée entre les deux features
         fig, ax = plt.subplots()
-        scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['score'], cmap='viridis', alpha=0.6)
+        scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
         ax.set_xlabel(selected_features[0])
         ax.set_ylabel(selected_features[1])
         ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
