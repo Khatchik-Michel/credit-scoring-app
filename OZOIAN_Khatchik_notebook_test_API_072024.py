@@ -78,7 +78,7 @@ if uploaded_file is not None:
             st.write(f"Status Code: {response.status_code}")
             st.write(f"Message: {response.text}")
 
-    # Si les prédictions sont effectuées, afficher les graphiques
+    # Si les prédictions sont effectuées, afficher les graphiques et les informations du client
     if st.session_state['predictions'] is not None and 'TARGET' in data.columns:
         st.write("**Distribution des features par classe après prédiction**")
         
@@ -99,7 +99,19 @@ if uploaded_file is not None:
         st.write("**Analyse bi-variée des features avec dégradé selon le score**")
         fig3 = px.scatter(data, x=feature_1, y=feature_2, color="TARGET", title="Analyse bi-variée")
         st.plotly_chart(fig3)
-    else:
-        st.write("Erreur : La colonne 'TARGET' n'a pas été ajoutée correctement.")
+        
+        # Afficher les informations du client sélectionné et son score
+        if not predire_tous:
+            st.write(f"**Informations du client sélectionné :** ID = {selected_id}")
+            st.write(selected_data)
+            st.write(f"Score du client (probabilité de la classe 1) : {selected_data['TARGET'].values[0]}")
+
+    # Ajouter des fonctionnalités déjà existantes, par exemple :
+    # Visualisation des importances globales et locales des features si disponible
+    if st.button("Visualiser l'importance des features"):
+        st.write("Affichage de l'importance des features globales et locales")
+        st.image("global_importance.png", caption='Importance globale des features')
+        st.image("local_importance.png", caption='Importance locale des features')
+
 else:
     st.write("Veuillez télécharger un fichier CSV pour commencer.")
