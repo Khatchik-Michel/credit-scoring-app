@@ -60,15 +60,16 @@ if uploaded_file is not None:
 if st.session_state['predictions'] is not None:
     st.write("Prédictions")
     predictions = st.session_state['predictions']
+    st.write("Réponse de l'API:", predictions)  # Afficher la réponse brute de l'API pour vérification
     for prediction in predictions:
-        client_id = prediction['SK_ID_CURR']
-        score = prediction['score']
+        client_id = prediction.get('SK_ID_CURR', "ID non spécifié")
+        score = prediction.get('score', 0)
         accepted = "Accepté" if score >= 0.5 else "Refusé"
         st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
         
         # Ajouter la colonne 'TARGET' si elle manque
         if 'TARGET' not in data.columns:
-            data['TARGET'] = [1 if score >= 0.5 else 0 for score in [p['score'] for p in predictions]]
+            data['TARGET'] = [1 if score >= 0.5 else 0 for score in [p.get('score', 0) for p in predictions]]
         
         # Jauge pour visualiser le score
         fig = go.Figure(go.Indicator(
