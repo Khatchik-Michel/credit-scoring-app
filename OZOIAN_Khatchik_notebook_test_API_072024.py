@@ -66,7 +66,29 @@ if st.session_state['predictions'] is not None:
     if isinstance(predictions, list):
         for prediction in predictions:
             st.write(f"Type de la prédiction : {type(prediction)}, Contenu : {prediction}")  # Ligne temporaire pour vérifier le format de chaque prédiction
-            if isinstance(prediction, dict):
+            if isinstance(prediction, list):
+                # Si la prédiction est une liste de scores
+                for idx, score in enumerate(prediction):
+                    client_id = f"ID_{idx}"  # Utiliser un identifiant généré ou une valeur par défaut
+                    accepted = "Accepté" if score >= 0.5 else "Refusé"
+                    st.write(f"N° Client: {client_id}, Crédit: {accepted}, Score: {score}")
+                    
+                    # Jauge pour visualiser le score
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=score,
+                        title={'text': "Score de Crédit"},
+                        gauge={
+                            'axis': {'range': [0, 1]},
+                            'bar': {'color': "green" if score >= 0.5 else "red"},
+                            'steps': [
+                                {'range': [0, 0.5], 'color': "lightcoral"},
+                                {'range': [0.5, 1], 'color': "lightgreen"}
+                            ]
+                        }
+                    ))
+                    st.plotly_chart(fig)
+            elif isinstance(prediction, dict):
                 client_id = prediction.get('SK_ID_CURR', "ID non spécifié")
                 score = prediction.get('score', 0)
                 accepted = "Accepté" if score >= 0.5 else "Refusé"
