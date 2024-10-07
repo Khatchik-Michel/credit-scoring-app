@@ -86,6 +86,15 @@ if st.session_state['predictions'] is not None:
                             }
                         ))
                         st.plotly_chart(fig)
+
+                        # Feature importance locale
+                        if 'local_importance' in predictions[idx]:
+                            local_importance = predictions[idx]['local_importance']
+                            fig, ax = plt.subplots()
+                            sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
+                            ax.set_title(f"Importance locale des features pour le client {selected_id}")
+                            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+                            st.pyplot(fig)
                         break  # Afficher un seul graphique, celui avec score > 0.5
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
@@ -109,6 +118,15 @@ if st.session_state['predictions'] is not None:
                 }
             ))
             st.plotly_chart(fig)
+
+            # Feature importance locale
+            if 'local_importance' in predictions:
+                local_importance = predictions['local_importance']
+                fig, ax = plt.subplots()
+                sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
+                ax.set_title(f"Importance locale des features pour le client {selected_id}")
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+                st.pyplot(fig)
     else:
         st.write(f"Format inattendu pour les prédictions: {predictions}")
 
@@ -124,16 +142,20 @@ if uploaded_file is not None:
             fig, ax = plt.subplots(1, 2, figsize=(14, 5))
             for i, feature in enumerate(selected_features):
                 sns.histplot(data, x=feature, hue='TARGET', kde=True, ax=ax[i])
+                ax[i].axvline(x=selected_data[feature].values[0], color='red', linestyle='--', label='Client')
+                ax[i].legend()
                 ax[i].set_title(f"Distribution de {feature} selon les classes")
             st.pyplot(fig)
             
             # Graphique d'analyse bi-variée entre les deux features
             fig, ax = plt.subplots()
             scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
+            ax.scatter(selected_data[selected_features[0]], selected_data[selected_features[1]], color='red', s=100, label='Client')
             ax.set_xlabel(selected_features[0])
             ax.set_ylabel(selected_features[1])
             ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
             plt.colorbar(scatter, label='Score')
+            ax.legend()
             st.pyplot(fig)
 
 # Feature importance globale
