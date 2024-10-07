@@ -28,35 +28,22 @@ if uploaded_file is not None:
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
 
-    # Choisir entre prédire pour tous les IDs ou un ID spécifique
-    predire_tous = st.checkbox("Prédire pour tous les IDs", value=False)
-
-    if predire_tous:
-        # Préparation des données pour l'API (tous les IDs)
-        data_json = data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)
-    else:
-        # Liste déroulante pour choisir l'ID
-        selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
-        
-        # Préparation des données pour l'API (ID spécifique)
-        selected_data = data[data['SK_ID_CURR'] == selected_id]
-        st.write("Données du client sélectionné:")
-        st.write(selected_data)
-
-        # Permettre la modification des features pour le client sélectionné
-        modified_features = {}
-        for feature in selected_data.columns:
-            if feature != 'SK_ID_CURR':  # Exclure l'ID du client
-                modified_features[feature] = st.number_input(f"Modifier {feature}", value=float(selected_data[feature].values[0]))
-        
-        # Mettre à jour les données avec les nouvelles valeurs des features
-        for feature, value in modified_features.items():
-            selected_data[feature] = value
-        
-        # Préparation des données modifiées pour l'API
-        data_json = selected_data.to_dict(orient='records')
-        st.write("Données envoyées à l'API après modification:", data_json)  
+    # Liste déroulante pour choisir l'ID
+    selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
+    
+    # Préparation des données pour l'API (ID spécifique)
+    selected_data = data[data['SK_ID_CURR'] == selected_id]
+    st.write("Données du client sélectionné:")
+    st.write(selected_data)
+    
+    # Choix des features pour l'analyse
+    features = data.columns.tolist()
+    selected_features = st.multiselect("Choisissez des features à inclure dans la prédiction", features, default=features)
+    
+    # Filtrer les données avec les features sélectionnées
+    filtered_data = selected_data[selected_features]
+    data_json = filtered_data.to_dict(orient='records')
+    st.write("Données envoyées à l'API après sélection des features:", data_json)  
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
@@ -100,15 +87,6 @@ if st.session_state['predictions'] is not None:
                             }
                         ))
                         st.plotly_chart(fig)
-
-                        # Feature importance locale
-                        if 'local_importance' in predictions[idx]:
-                            local_importance = predictions[idx]['local_importance']
-                            fig, ax = plt.subplots()
-                            sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
-                            ax.set_title(f"Importance locale des features pour le client {selected_id}")
-                            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-                            st.pyplot(fig)
                         break  # Afficher un seul graphique, celui avec score > 0.5
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
@@ -132,23 +110,11 @@ if st.session_state['predictions'] is not None:
                 }
             ))
             st.plotly_chart(fig)
-
-            # Feature importance locale
-            if 'local_importance' in predictions:
-                local_importance = predictions['local_importance']
-                fig, ax = plt.subplots()
-                sns.barplot(x=list(local_importance.keys()), y=list(local_importance.values()), ax=ax)
-                ax.set_title(f"Importance locale des features pour le client {selected_id}")
-                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-                st.pyplot(fig)
     else:
         st.write(f"Format inattendu pour les prédictions: {predictions}")
 
 # Visualisation des résultats
 if uploaded_file is not None:
-    features = data.columns.tolist()
-    selected_features = st.multiselect("Choisissez deux features pour l'analyse", features, default=features[:2])
-    
     if len(selected_features) == 2 and 'TARGET' in data.columns:
         # Vérifier si les features sélectionnées existent dans les données
         if all(feature in data.columns for feature in selected_features):
@@ -170,17 +136,6 @@ if uploaded_file is not None:
             ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
             plt.colorbar(scatter, label='Score')
             ax.legend()
-            st.pyplot(fig)
-
-            # Ajouter la comparaison avec un groupe de clients similaires
-            filtered_data = data[data['TARGET'] == selected_data['TARGET'].values[0]]
-            st.write("Comparaison avec des clients similaires")
-            fig, ax = plt.subplots(1, 2, figsize=(14, 5))
-            for i, feature in enumerate(selected_features):
-                sns.histplot(filtered_data, x=feature, kde=True, ax=ax[i], color='blue', label='Clients similaires')
-                ax[i].axvline(x=selected_data[feature].values[0], color='red', linestyle='--', label='Client')
-                ax[i].legend()
-                ax[i].set_title(f"Comparaison de {feature} avec des clients similaires")
             st.pyplot(fig)
 
 # Feature importance globale
