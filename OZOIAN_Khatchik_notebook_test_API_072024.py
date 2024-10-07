@@ -67,7 +67,7 @@ if st.session_state['predictions'] is not None:
         for idx, prediction_list in enumerate(predictions):
             if isinstance(prediction_list, list):
                 for score in prediction_list:
-                    if isinstance(score, (int, float)):
+                    if isinstance(score, (int, float)) and score > 0.5:
                         accepted = "Accepté" if score >= 0.5 else "Refusé"
                         st.write(f"Crédit: {accepted}, Score: {score}")
                         
@@ -86,10 +86,11 @@ if st.session_state['predictions'] is not None:
                             }
                         ))
                         st.plotly_chart(fig)
+                        break  # Afficher un seul graphique, celui avec score > 0.5
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
         score = predictions.get('score', 0)
-        if isinstance(score, (int, float)):
+        if isinstance(score, (int, float)) and score > 0.5:
             accepted = "Accepté" if score >= 0.5 else "Refusé"
             st.write(f"Crédit: {accepted}, Score: {score}")
             
@@ -117,21 +118,23 @@ if uploaded_file is not None:
     selected_features = st.multiselect("Choisissez deux features pour l'analyse", features, default=features[:2])
     
     if len(selected_features) == 2 and 'TARGET' in data.columns:
-        # Graphiques de distribution des features sélectionnées
-        fig, ax = plt.subplots(1, 2, figsize=(14, 5))
-        for i, feature in enumerate(selected_features):
-            sns.histplot(data, x=feature, hue='TARGET', kde=True, ax=ax[i])
-            ax[i].set_title(f"Distribution de {feature} selon les classes")
-        st.pyplot(fig)
-        
-        # Graphique d'analyse bi-variée entre les deux features
-        fig, ax = plt.subplots()
-        scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
-        ax.set_xlabel(selected_features[0])
-        ax.set_ylabel(selected_features[1])
-        ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
-        plt.colorbar(scatter, label='Score')
-        st.pyplot(fig)
+        # Vérifier si les features sélectionnées existent dans les données
+        if all(feature in data.columns for feature in selected_features):
+            # Graphiques de distribution des features sélectionnées
+            fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+            for i, feature in enumerate(selected_features):
+                sns.histplot(data, x=feature, hue='TARGET', kde=True, ax=ax[i])
+                ax[i].set_title(f"Distribution de {feature} selon les classes")
+            st.pyplot(fig)
+            
+            # Graphique d'analyse bi-variée entre les deux features
+            fig, ax = plt.subplots()
+            scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
+            ax.set_xlabel(selected_features[0])
+            ax.set_ylabel(selected_features[1])
+            ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
+            plt.colorbar(scatter, label='Score')
+            st.pyplot(fig)
 
 # Feature importance globale
 if st.button("Visualiser l'importance des features"):
