@@ -41,8 +41,22 @@ if uploaded_file is not None:
         
         # Préparation des données pour l'API (ID spécifique)
         selected_data = data[data['SK_ID_CURR'] == selected_id]
+        st.write("Données du client sélectionné:")
+        st.write(selected_data)
+
+        # Permettre la modification des features pour le client sélectionné
+        modified_features = {}
+        for feature in selected_data.columns:
+            if feature != 'SK_ID_CURR':  # Exclure l'ID du client
+                modified_features[feature] = st.number_input(f"Modifier {feature}", value=float(selected_data[feature].values[0]))
+        
+        # Mettre à jour les données avec les nouvelles valeurs des features
+        for feature, value in modified_features.items():
+            selected_data[feature] = value
+        
+        # Préparation des données modifiées pour l'API
         data_json = selected_data.to_dict(orient='records')
-        st.write("Données envoyées à l'API:", data_json)  
+        st.write("Données envoyées à l'API après modification:", data_json)  
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
