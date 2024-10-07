@@ -4,8 +4,6 @@ import requests
 import json
 import numpy as np
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 
 st.title("Application de Scoring de Crédit")
@@ -38,8 +36,13 @@ if uploaded_file is not None:
     selected_data = data[selected_features]
     st.write("Données du client sélectionné:")
     st.write(selected_data.head())
+    
+    # Anonymiser les données envoyées à l'API
+    st.write("Données envoyées à l'API après sélection des features: (les valeurs sont anonymisées)")
+    st.write(f"Nombre de clients : {len(selected_data)}")
+    st.write(f"Features utilisées : {selected_features}")
+    
     data_json = selected_data.to_dict(orient='records')
-    st.write("Données envoyées à l'API après sélection des features:", data_json)
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
