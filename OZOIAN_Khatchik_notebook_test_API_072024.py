@@ -150,7 +150,7 @@ if uploaded_file is not None:
             # Graphique d'analyse bi-variée entre les deux features
             fig, ax = plt.subplots()
             scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
-            ax.scatter(selected_data[selected_features[0]], selected_data[selected_features[1]], color='red', s=100, label='Client')
+            ax.scatter(selected_data[selected_features[0]].values[0], selected_data[selected_features[1]].values[0], color='red', s=100, label='Client')
             ax.set_xlabel(selected_features[0])
             ax.set_ylabel(selected_features[1])
             ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
