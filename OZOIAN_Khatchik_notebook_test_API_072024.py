@@ -1,5 +1,5 @@
-import pandas as pd
 import streamlit as st
+import pandas as pd
 import requests
 import json
 import numpy as np
@@ -28,13 +28,16 @@ if uploaded_file is not None:
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
 
-    # Choisir un ID spécifique
-    selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
-    selected_data = data[data['SK_ID_CURR'] == selected_id]
+    # Liste restreinte des features à inclure dans la prédiction
+    important_features = [
+        'SK_ID_CURR', 'AMT_INCOME_TOTAL', 'AMT_CREDIT', 'DAYS_BIRTH', 'EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3'
+    ]
+    selected_features = st.multiselect("Choisissez des features à inclure dans la prédiction", important_features, default=important_features[:3])
 
-    # Choisir les features à inclure dans la prédiction
-    features_to_include = st.multiselect("Choisissez des features à inclure dans la prédiction", options=data.columns.tolist(), default=data.columns.tolist())
-    selected_data = selected_data[features_to_include]
+    # Préparation des données pour l'API
+    selected_data = data[selected_features]
+    st.write("Données du client sélectionné:")
+    st.write(selected_data.head())
     data_json = selected_data.to_dict(orient='records')
     st.write("Données envoyées à l'API après sélection des features:", data_json)
     
@@ -59,27 +62,32 @@ if st.session_state['predictions'] is not None:
     # Vérifier si la réponse est une liste ou un dictionnaire
     if isinstance(predictions, list):
         for prediction in predictions:
-            score = prediction.get('score', 0)
-            if score > 0.5:
-                accepted = "Accepté"
-                st.write(f"Crédit: {accepted}, Score: {score}")
-                # Jauge pour visualiser le score
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=score,
-                    title={'text': "Score de Crédit"},
-                    gauge={
-                        'axis': {'range': [0, 1]},
-                        'bar': {'color': "green" if score >= 0.5 else "red"},
-                        'steps': [
-                            {'range': [0, 0.5], 'color': "lightcoral"},
-                            {'range': [0.5, 1], 'color': "lightgreen"}
-                        ]
-                    }
-                ))
-                st.plotly_chart(fig)
+            if isinstance(prediction, dict):
+                client_id = prediction.get('SK_ID_CURR', "ID non spécifié")
+                score = prediction.get('score', 0)
+                if score > 0.5:
+                    accepted = "Accepté"
+                    st.write(f"Crédit: {accepted}, Score: {score}")
+                    # Jauge pour visualiser le score
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=score,
+                        title={'text': "Score de Crédit"},
+                        gauge={
+                            'axis': {'range': [0, 1]},
+                            'bar': {'color': "green" if score >= 0.5 else "red"},
+                            'steps': [
+                                {'range': [0, 0.5], 'color': "lightcoral"},
+                                {'range': [0.5, 1], 'color': "lightgreen"}
+                            ]
+                        }
+                    ))
+                    st.plotly_chart(fig)
+            else:
+                st.write("Format inattendu pour la prédiction:", prediction)
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
+        client_id = predictions.get('SK_ID_CURR', "ID non spécifié")
         score = predictions.get('score', 0)
         if score > 0.5:
             accepted = "Accepté"
