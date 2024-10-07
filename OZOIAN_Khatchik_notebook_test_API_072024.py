@@ -1,5 +1,5 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 import requests
 import json
 import numpy as np
@@ -28,22 +28,15 @@ if uploaded_file is not None:
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
 
-    # Liste déroulante pour choisir l'ID
+    # Choisir un ID spécifique
     selected_id = st.selectbox("Choisissez un ID", data['SK_ID_CURR'].unique())
-    
-    # Préparation des données pour l'API (ID spécifique)
     selected_data = data[data['SK_ID_CURR'] == selected_id]
-    st.write("Données du client sélectionné:")
-    st.write(selected_data)
-    
-    # Choix des features pour l'analyse
-    features = data.columns.tolist()
-    selected_features = st.multiselect("Choisissez des features à inclure dans la prédiction", features, default=features)
-    
-    # Filtrer les données avec les features sélectionnées
-    filtered_data = selected_data[selected_features]
-    data_json = filtered_data.to_dict(orient='records')
-    st.write("Données envoyées à l'API après sélection des features:", data_json)  
+
+    # Choisir les features à inclure dans la prédiction
+    features_to_include = st.multiselect("Choisissez des features à inclure dans la prédiction", options=data.columns.tolist(), default=data.columns.tolist())
+    selected_data = selected_data[features_to_include]
+    data_json = selected_data.to_dict(orient='records')
+    st.write("Données envoyées à l'API après sélection des features:", data_json)
     
     # Bouton pour lancer les prédictions
     if st.button("Prédire"):
@@ -65,36 +58,32 @@ if st.session_state['predictions'] is not None:
     
     # Vérifier si la réponse est une liste ou un dictionnaire
     if isinstance(predictions, list):
-        for idx, prediction_list in enumerate(predictions):
-            if isinstance(prediction_list, list):
-                for score in prediction_list:
-                    if isinstance(score, (int, float)) and score > 0.5:
-                        accepted = "Accepté" if score >= 0.5 else "Refusé"
-                        st.write(f"Crédit: {accepted}, Score: {score}")
-                        
-                        # Jauge pour visualiser le score
-                        fig = go.Figure(go.Indicator(
-                            mode="gauge+number",
-                            value=score,
-                            title={'text': "Score de Crédit"},
-                            gauge={
-                                'axis': {'range': [0, 1]},
-                                'bar': {'color': "green" if score >= 0.5 else "red"},
-                                'steps': [
-                                    {'range': [0, 0.5], 'color': "lightcoral"},
-                                    {'range': [0.5, 1], 'color': "lightgreen"}
-                                ]
-                            }
-                        ))
-                        st.plotly_chart(fig)
-                        break  # Afficher un seul graphique, celui avec score > 0.5
+        for prediction in predictions:
+            score = prediction.get('score', 0)
+            if score > 0.5:
+                accepted = "Accepté"
+                st.write(f"Crédit: {accepted}, Score: {score}")
+                # Jauge pour visualiser le score
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=score,
+                    title={'text': "Score de Crédit"},
+                    gauge={
+                        'axis': {'range': [0, 1]},
+                        'bar': {'color': "green" if score >= 0.5 else "red"},
+                        'steps': [
+                            {'range': [0, 0.5], 'color': "lightcoral"},
+                            {'range': [0.5, 1], 'color': "lightgreen"}
+                        ]
+                    }
+                ))
+                st.plotly_chart(fig)
     elif isinstance(predictions, dict):
         # Si la réponse est un seul dictionnaire
         score = predictions.get('score', 0)
-        if isinstance(score, (int, float)) and score > 0.5:
-            accepted = "Accepté" if score >= 0.5 else "Refusé"
+        if score > 0.5:
+            accepted = "Accepté"
             st.write(f"Crédit: {accepted}, Score: {score}")
-            
             # Jauge pour visualiser le score
             fig = go.Figure(go.Indicator(
                 mode="gauge+number",
@@ -110,33 +99,6 @@ if st.session_state['predictions'] is not None:
                 }
             ))
             st.plotly_chart(fig)
-    else:
-        st.write(f"Format inattendu pour les prédictions: {predictions}")
-
-# Visualisation des résultats
-if uploaded_file is not None:
-    if len(selected_features) == 2 and 'TARGET' in data.columns:
-        # Vérifier si les features sélectionnées existent dans les données
-        if all(feature in data.columns for feature in selected_features):
-            # Graphiques de distribution des features sélectionnées
-            fig, ax = plt.subplots(1, 2, figsize=(14, 5))
-            for i, feature in enumerate(selected_features):
-                sns.histplot(data, x=feature, hue='TARGET', kde=True, ax=ax[i])
-                ax[i].axvline(x=selected_data[feature].values[0], color='red', linestyle='--', label='Client')
-                ax[i].legend()
-                ax[i].set_title(f"Distribution de {feature} selon les classes")
-            st.pyplot(fig)
-            
-            # Graphique d'analyse bi-variée entre les deux features
-            fig, ax = plt.subplots()
-            scatter = ax.scatter(data[selected_features[0]], data[selected_features[1]], c=data['TARGET'], cmap='viridis', alpha=0.6)
-            ax.scatter(selected_data[selected_features[0]].values[0], selected_data[selected_features[1]].values[0], color='red', s=100, label='Client')
-            ax.set_xlabel(selected_features[0])
-            ax.set_ylabel(selected_features[1])
-            ax.set_title("Analyse bi-variée entre les deux features avec score en dégradé de couleur")
-            plt.colorbar(scatter, label='Score')
-            ax.legend()
-            st.pyplot(fig)
 
 # Feature importance globale
 if st.button("Visualiser l'importance des features"):
