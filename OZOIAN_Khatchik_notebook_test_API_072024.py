@@ -158,6 +158,17 @@ if uploaded_file is not None:
             ax.legend()
             st.pyplot(fig)
 
+            # Ajouter la comparaison avec un groupe de clients similaires
+            filtered_data = data[data['TARGET'] == selected_data['TARGET'].values[0]]
+            st.write("Comparaison avec des clients similaires")
+            fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+            for i, feature in enumerate(selected_features):
+                sns.histplot(filtered_data, x=feature, kde=True, ax=ax[i], color='blue', label='Clients similaires')
+                ax[i].axvline(x=selected_data[feature].values[0], color='red', linestyle='--', label='Client')
+                ax[i].legend()
+                ax[i].set_title(f"Comparaison de {feature} avec des clients similaires")
+            st.pyplot(fig)
+
 # Feature importance globale
 if st.button("Visualiser l'importance des features"):
     st.write("Affichage de l'importance des features globales et locales")
